@@ -3,7 +3,7 @@ import time
 import logging
 
 from curl_cffi import requests
-from starlight_cli import state
+from kuro import state
 
 logger = logging.getLogger(__name__)
 _kwik_session = None

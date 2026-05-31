@@ -4,7 +4,7 @@ import fcntl
 from pathlib import Path
 from typing import Optional
 
-STATE_DIR = Path.home() / ".starlight"
+STATE_DIR = Path.home() / ".kuro_anime"
 STATE_FILE = STATE_DIR / "state.json"
 
 _cache = None

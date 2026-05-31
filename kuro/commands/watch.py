@@ -4,8 +4,8 @@ from pathlib import Path
 
 import click
 
-from starlight_cli.cli import cli
-from starlight_cli._helpers import _resolve_and_play
+from kuro.cli import cli
+from kuro._helpers import _resolve_and_play
 
 
 @cli.command()
@@ -15,7 +15,7 @@ from starlight_cli._helpers import _resolve_and_play
 def watch(anime, episode_id, episode_opt):
     ctx = click.get_current_context()
     if ctx.parent.obj.get("json"):
-        from starlight_cli._helpers import _resolve_anime
+        from kuro._helpers import _resolve_anime
         session_id, title = _resolve_anime(anime)
         sys.stdout.write(json.dumps({"session_id": session_id, "title": title}) + "\n")
         return
@@ -31,7 +31,7 @@ def watch(anime, episode_id, episode_opt):
 def download(anime, episode_id, episode_opt, output, batch):
     ctx = click.get_current_context()
     if ctx.parent.obj.get("json"):
-        from starlight_cli._helpers import _resolve_anime
+        from kuro._helpers import _resolve_anime
         session_id, title = _resolve_anime(anime)
         sys.stdout.write(json.dumps({"session_id": session_id, "title": title}) + "\n")
         return
@@ -39,8 +39,8 @@ def download(anime, episode_id, episode_opt, output, batch):
     out_dir = Path(output) if output else None
 
     if batch:
-        from starlight_cli._helpers import _parse_episode_range, _batch_download
+        from kuro._helpers import _parse_episode_range, _batch_download
         _batch_download(anime, _parse_episode_range(batch), out_dir)
     else:
-        from starlight_cli._helpers import _download_single
+        from kuro._helpers import _download_single
         _download_single(anime, episode_id or episode_opt, out_dir)

@@ -4,9 +4,9 @@ import sys
 import click
 from rich.table import Table
 
-from starlight_cli.cli import cli, console, err_console
-from starlight_cli._helpers import _resolve_anime
-from starlight_cli.api import fetch_episode_list
+from kuro.cli import cli, console, err_console
+from kuro._helpers import _resolve_anime
+from kuro.api import fetch_episode_list
 
 
 @cli.command()

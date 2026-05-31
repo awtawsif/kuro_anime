@@ -10,15 +10,15 @@ from rich.prompt import Prompt
 from rich.markup import escape
 from rich.progress import Progress, BarColumn, TextColumn, TimeRemainingColumn
 
-from starlight_cli import state
-from starlight_cli.api import (
+from kuro import state
+from kuro.api import (
     fetch_anime_details,
     fetch_anime_search_results,
     fetch_episode_list,
     fetch_episode_streams,
 )
-from starlight_cli.kwik import extract_hls_url
-from starlight_cli.player import play
+from kuro.kwik import extract_hls_url
+from kuro.player import play
 
 UUID_RE = re.compile(r"^[a-f0-9-]{36}$")
 
@@ -441,4 +441,4 @@ def _batch_download(anime: str, episodes: list[int], output_dir: Path | None):
     console.print(f"\n[green]Batch download complete. Files saved to: {output_dir}[/]")
 
 
-from starlight_cli.cli import console, err_console  # noqa: E402 — deferred to avoid circular import
+from kuro.cli import console, err_console  # noqa: E402 — deferred to avoid circular import

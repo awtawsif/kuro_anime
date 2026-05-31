@@ -5,10 +5,10 @@ import click
 from rich.panel import Panel
 from rich.table import Table
 
-from starlight_cli.cli import cli, console, err_console
-from starlight_cli._helpers import _resolve_anime
-from starlight_cli import state
-from starlight_cli.api import fetch_anime_details
+from kuro.cli import cli, console, err_console
+from kuro._helpers import _resolve_anime
+from kuro import state
+from kuro.api import fetch_anime_details
 
 
 @cli.command()

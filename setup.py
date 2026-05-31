@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="starlight-anime-hub",
+    name="kuro_anime",
     version="1.4.0",
     packages=find_packages(),
     include_package_data=True,
@@ -17,7 +17,7 @@ setup(
     ],
     entry_points={
         "console_scripts": [
-            "starlight=starlight_cli.cli:cli",
+            "kuro=kuro.cli:cli",
         ],
     },
 )

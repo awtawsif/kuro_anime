@@ -1,7 +1,7 @@
 import click
 from rich.console import Console
 
-from starlight_cli.config import API_HEADERS
+from kuro.config import API_HEADERS
 
 console = Console()
 err_console = Console(stderr=True)
@@ -18,4 +18,4 @@ def cli(ctx, json_output):
         )
 
 
-import starlight_cli.commands  # noqa: E402 — register commands via side-effect
+import kuro.commands  # noqa: E402 — register commands via side-effect

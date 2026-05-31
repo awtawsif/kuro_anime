@@ -4,9 +4,9 @@ import sys
 import click
 from rich.table import Table
 
-from starlight_cli.cli import cli, console, err_console
-from starlight_cli._helpers import _assign_code
-from starlight_cli.api import fetch_anime_search_results
+from kuro.cli import cli, console, err_console
+from kuro._helpers import _assign_code
+from kuro.api import fetch_anime_search_results
 
 
 @cli.command()
@@ -48,6 +48,6 @@ def search(query):
 
     console.print(table)
     console.print(
-        "\nUse [bold]starlight detail <code>[/] for more information, "
-        "or [bold]starlight watch <code>[/] to start watching."
+        "\nUse [bold]kuro detail <code>[/] for more information, "
+        "or [bold]kuro watch <code>[/] to start watching."
     )
