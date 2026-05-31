@@ -31,9 +31,9 @@ def _read():
 def _write(data):
     _ensure()
     global _cache
-    _cache = None
     with open(STATE_FILE, "w") as f:
         fcntl.flock(f.fileno(), fcntl.LOCK_EX)
+        _cache = None
         json.dump(data, f, indent=2)
 
 

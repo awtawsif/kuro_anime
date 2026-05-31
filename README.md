@@ -193,9 +193,11 @@ Delete this file to reset all state.
 ```
 kuro/
   __init__.py    # Package marker
-  cli.py         # @click.group() + imports (commands registered via side-effect)
-  _helpers.py    # Shared logic: slugify, UUID check, code gen, episode/quality pickers, stream/play
-  api.py         # REST + scrape animepahe.pw (shared requests.Session, centralized _api_get wrapper)
+  cli.py         # @click.group() + --json, --version (commands registered via side-effect)
+  console.py     # Rich console singleton (console + err_console)
+  exceptions.py  # KuroError hierarchy (ResolutionError, StreamError, DownloadError, PlayerNotFoundError)
+  _helpers.py    # Shared logic: slugify, UUID check, code gen, episode/quality pickers, stream/play/download
+  api.py         # REST + scrape animepahe.pw (shared requests.Session, retry+backoff, centralized _api_get wrapper)
   config.py      # HTTP headers and target URLs
   kwik.py        # kwik.cx JS dean-packer decryption → .m3u8 URL (lazy curl_cffi session, raw HTML fallback)
   player.py      # mpv subprocess wrapper
@@ -212,14 +214,16 @@ kuro/
 ## Dependencies
 
 Runtime:
-- `requests` — HTTP client for animepahe.pw
+- `requests` — HTTP client for animepahe.pw (with retry+backoff)
 - `curl_cffi` — TLS-fingerprinted HTTP client for kwik.cx
 - `beautifulsoup4` + `lxml` — HTML parsing
 - `click` — CLI framework
 - `rich` — Terminal formatting
+- `yt-dlp` + `pycryptodomex` — Episode download (required for `kuro download`)
 
 System:
 - `mpv` — Video player (required for `kuro watch`)
+- `ffmpeg` — Video processing (required for `kuro download`)
 
 ## How Watching Works
 

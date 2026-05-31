@@ -1,13 +1,21 @@
+import logging
+from importlib.metadata import version, PackageNotFoundError
+
 import click
-from rich.console import Console
 
 from kuro.config import API_HEADERS
+from kuro.console import console, err_console
 
-console = Console()
-err_console = Console(stderr=True)
+logging.basicConfig(level=logging.WARNING, format="%(levelname)s: %(message)s")
+
+try:
+    _version = version("kuro_anime")
+except PackageNotFoundError:
+    _version = "unknown"
 
 
 @click.group()
+@click.version_option(version=_version, prog_name="kuro")
 @click.option("--json", "json_output", is_flag=True, default=False, help="Output as JSON")
 @click.pass_context
 def cli(ctx, json_output):

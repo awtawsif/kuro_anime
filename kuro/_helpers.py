@@ -1,7 +1,5 @@
-import os
 import re
 import subprocess
-import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
@@ -11,6 +9,8 @@ from rich.markup import escape
 from rich.progress import Progress, BarColumn, TextColumn, TimeRemainingColumn
 
 from kuro import state
+from kuro.console import console, err_console
+from kuro.exceptions import KuroError, ResolutionError, StreamError, DownloadError
 from kuro.api import (
     fetch_anime_details,
     fetch_anime_search_results,
@@ -80,19 +80,16 @@ def _resolve_anime(identifier: str):
         if not error:
             title = details.get("title", identifier)
             return identifier, title
-        err_console.print(f"[red]Error resolving UUID:[/] {error}")
-        sys.exit(1)
+        raise ResolutionError(f"Error resolving UUID: {error}")
 
     results, error = fetch_anime_search_results(identifier)
     if error:
-        err_console.print(f"[red]Error:[/] {error}")
-        sys.exit(1)
+        raise ResolutionError(f"Error: {error}")
 
     if not results:
-        err_console.print(
-            f"[red]Could not resolve '{identifier}'. Try searching first.[/]"
+        raise ResolutionError(
+            f"Could not resolve '{identifier}'. Try searching first."
         )
-        sys.exit(1)
 
     slug_map = {_slugify(r["title"]): r for r in results}
     if identifier in slug_map:
@@ -136,32 +133,67 @@ def _fetch_all_episodes(session_id: str, sort: str = "episode_asc", max_pages: i
 
 
 def _pick_episode(session_id: str):
-    with console.status("Fetching episodes..."):
-        all_ep = _fetch_all_episodes(session_id)
-    if not all_ep:
-        err_console.print("[red]No episodes found for this anime.[/]")
-        sys.exit(1)
+    page = 1
+    sort = "episode_desc"
+    all_ep: list[dict] = []
+    ep_by_num: dict[int, dict] = {}
+    total_pages = 1
 
-    console.print(f"[dim]Episodes 1–{len(all_ep)} available[/]")
+    def load(p: int) -> tuple[list[dict], int]:
+        nonlocal page, total_pages
+        page = p
+        with console.status(f"Fetching page {p}..."):
+            batch, pag, err = fetch_episode_list(session_id, p, sort)
+        if err:
+            raise KuroError(err)
+        total_pages = pag.get("last_page", 1)
+        all_ep.extend(batch)
+        for e in batch:
+            ep_by_num[int(e["episode"])] = e
+        return batch, pag.get("total", 0)
+
+    batch, total_count = load(1)
+    if not all_ep:
+        raise KuroError("No episodes found for this anime.")
 
     while True:
-        display_eps = all_ep[-30:]
+        console.print(f"[dim]Episodes loaded: {len(ep_by_num)} / {total_count}  (page {page}/{total_pages})[/]")
         table = Table()
         table.add_column("#", style="cyan")
-
-        for ep in display_eps:
+        for ep in batch:
             table.add_row(str(ep.get("episode", "?")))
-
-        if len(all_ep) > 30:
-            console.print(f"[dim]Showing last 30 of {len(all_ep)} episodes[/]")
         console.print(table)
 
-        choice = Prompt.ask("Enter episode number or range (e.g. 1-50)")
+        nav = []
+        if page < total_pages:
+            nav.append("n=next")
+        if page > 1:
+            nav.append("p=prev")
+        if len(ep_by_num) < total_count:
+            nav.append("a=load all")
+        nav_str = f" ({', '.join(nav)})" if nav else " (all loaded)"
+
+        choice = Prompt.ask(f"Enter episode number or range{nav_str}")
+
+        if choice == "n" and page < total_pages:
+            batch, _ = load(page + 1)
+            continue
+        if choice == "p" and page > 1:
+            batch, _ = load(page - 1)
+            continue
+        if choice == "a" and len(ep_by_num) < total_count:
+            for p in range(page + 1, total_pages + 1):
+                load(p)
+            console.print(f"[dim]Loaded all {len(ep_by_num)} episodes.[/]")
+            continue
 
         range_match = re.match(r"^(\d+)-(\d+)$", choice)
         if range_match:
             start, end = int(range_match.group(1)), int(range_match.group(2))
-            filtered = [e for e in all_ep if start <= int(e.get("episode", 0)) <= end]
+            if any(n not in ep_by_num for n in range(start, end + 1)):
+                for p in range(page + 1, total_pages + 1):
+                    load(p)
+            filtered = [ep_by_num[n] for n in range(start, end + 1) if n in ep_by_num]
             if not filtered:
                 err_console.print(f"[red]No episodes in range {start}-{end}.[/]")
                 continue
@@ -171,15 +203,21 @@ def _pick_episode(session_id: str):
                 t.add_row(str(ep.get("episode", "?")))
             console.print(t)
             sub = Prompt.ask("Enter episode number")
-            matched = [e for e in filtered if str(e.get("episode")) == sub]
-            if matched:
-                return matched[0].get("session")
+            if int(sub) in ep_by_num:
+                return ep_by_num[int(sub)]["session"]
             err_console.print(f"[red]Episode {sub} not found in range.[/]")
             continue
 
-        matched = [e for e in all_ep if str(e.get("episode")) == choice]
-        if matched:
-            return matched[0].get("session")
+        ep_num = int(choice)
+        if ep_num in ep_by_num:
+            return ep_by_num[ep_num]["session"]
+
+        if len(ep_by_num) < total_count:
+            with console.status(f"Searching for episode {ep_num}..."):
+                for p in range(page + 1, total_pages + 1):
+                    load(p)
+            if ep_num in ep_by_num:
+                return ep_by_num[ep_num]["session"]
         err_console.print(f"[red]Episode {choice} not found.[/]")
 
 
@@ -222,11 +260,9 @@ def _resolve_and_play(anime: str, episode_id: str | None, do_play: bool):
         streams, error = fetch_episode_streams(session_id, episode_id)
 
     if error:
-        err_console.print(f"[red]{error}[/]")
-        sys.exit(1)
+        raise StreamError(error)
     if not streams:
-        err_console.print("[red]No streams found.[/]")
-        sys.exit(1)
+        raise StreamError("No streams found.")
 
     selected = _pick_quality(streams)
     kwik_url = selected["kwik_url"]
@@ -235,8 +271,7 @@ def _resolve_and_play(anime: str, episode_id: str | None, do_play: bool):
         try:
             video_url = extract_hls_url(kwik_url)
         except Exception as e:
-            err_console.print(f"[red]Failed to extract video URL:[/] {e}")
-            sys.exit(1)
+            raise StreamError(f"Failed to extract video URL: {e}")
 
     if do_play:
         label = f"{selected.get('resolution', '?')}p"
@@ -293,11 +328,9 @@ YTDLP_PROGRESS_RE = re.compile(
 
 def _download_one(video_url: str, output_path: Path, label: str):
     if not _ytdlp_available():
-        err_console.print(
-            "[red]yt-dlp is required for downloads. Install: "
-            "pip install yt-dlp pycryptodomex[/]"
+        raise DownloadError(
+            "yt-dlp is required for downloads. Install: pip install yt-dlp pycryptodomex"
         )
-        sys.exit(1)
 
     proc = subprocess.Popen(
         ["yt-dlp",
@@ -328,8 +361,7 @@ def _download_one(video_url: str, output_path: Path, label: str):
         proc.wait()
 
     if proc.returncode != 0:
-        err_console.print(f"[red]Download failed (exit code {proc.returncode})[/]")
-        sys.exit(1)
+        raise DownloadError(f"Download failed (exit code {proc.returncode})")
 
     size = _format_size(output_path.stat().st_size)
     console.print(f"[green]Downloaded:[/] {output_path.name} ({size})")
@@ -361,11 +393,9 @@ def _download_single(anime: str, episode_id: str | None, output_dir: Path | None
         streams, error = fetch_episode_streams(session_id, episode_id)
 
     if error:
-        err_console.print(f"[red]{error}[/]")
-        sys.exit(1)
+        raise DownloadError(error)
     if not streams:
-        err_console.print("[red]No streams found.[/]")
-        sys.exit(1)
+        raise DownloadError("No streams found.")
 
     selected = _pick_quality(streams)
 
@@ -373,8 +403,7 @@ def _download_single(anime: str, episode_id: str | None, output_dir: Path | None
         try:
             video_url = extract_hls_url(selected["kwik_url"])
         except Exception as e:
-            err_console.print(f"[red]Failed to extract video URL:[/] {e}")
-            sys.exit(1)
+            raise DownloadError(f"Failed to extract video URL: {e}")
 
     console.print(f"[dim]URL: {video_url}[/]")
 
@@ -394,8 +423,7 @@ def _batch_download(anime: str, episodes: list[int], output_dir: Path | None):
         all_ep = _fetch_all_episodes(session_id)
 
     if not all_ep:
-        err_console.print("[red]No episodes found.[/]")
-        sys.exit(1)
+        raise DownloadError("No episodes found.")
 
     ep_map = {int(e.get("episode", 0)): e for e in all_ep}
     safe_title = _sanitize_filename(title)
@@ -441,4 +469,3 @@ def _batch_download(anime: str, episodes: list[int], output_dir: Path | None):
     console.print(f"\n[green]Batch download complete. Files saved to: {output_dir}[/]")
 
 
-from kuro.cli import console, err_console  # noqa: E402 — deferred to avoid circular import

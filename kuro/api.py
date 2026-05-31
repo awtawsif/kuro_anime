@@ -9,19 +9,26 @@ fetching anime details, retrieving episode lists, and extracting download links.
 import re
 import logging
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 from .config import API_BASE_URL, ANIME_PAGE_BASE_URL, API_HEADERS
 
 logger = logging.getLogger(__name__)
 
-_api_session = None
+_API_SESSION = None
+
+UUID_RE = re.compile(r"^[a-f0-9-]{36}$")
 
 
 def _get_session():
-    global _api_session
-    if _api_session is None:
-        _api_session = requests.Session()
-        _api_session.headers.update(API_HEADERS)
-    return _api_session
+    global _API_SESSION
+    if _API_SESSION is None:
+        _API_SESSION = requests.Session()
+        _API_SESSION.headers.update(API_HEADERS)
+        retry = Retry(total=2, backoff_factor=1, status_forcelist=[429, 500, 502, 503])
+        adapter = HTTPAdapter(max_retries=retry)
+        _API_SESSION.mount("https://", adapter)
+    return _API_SESSION
 
 
 def _api_get(params, timeout=10):
@@ -33,7 +40,7 @@ def _api_get(params, timeout=10):
         logger.error("API error (params=%s): %s", params, e)
         return None, f"API request failed: {e}"
     except Exception as e:
-        logger.error("Unexpected API error (params=%s): %s", params, e)
+        logger.exception("Unexpected API error (params=%s)", params)
         return None, f"Unexpected error: {e}"
 
 
@@ -117,11 +124,13 @@ def _parse_related_anime_card(card_row_element):
 
     return anime_card_data
 
+
 def fetch_anime_search_results(query):
     data, error_message = _api_get({'m': 'search', 'q': query})
     if error_message:
         return [], error_message
     return data.get('data', []), None
+
 
 def fetch_anime_details(anime_session_id):
     """
@@ -135,6 +144,8 @@ def fetch_anime_details(anime_session_id):
         tuple: A tuple containing a dictionary of anime details and an error message.
                Returns ({}, error_message) on failure, (anime_details, None) on success.
     """
+    if not UUID_RE.match(str(anime_session_id)):
+        return {}, "Invalid session ID format"
     detail_url = f"{ANIME_PAGE_BASE_URL}/{anime_session_id}"
     anime_details = {
         'title': 'N/A', 'synopsis': 'No synopsis available.',
@@ -262,6 +273,8 @@ def fetch_episode_list(anime_session_id, page, sort_order='episode_asc'):
     return episodes, pagination_data, None
 
 def fetch_episode_streams(anime_session_id, episode_session_id):
+    if not UUID_RE.match(str(anime_session_id)):
+        return [], "Invalid session ID format"
     clean_episode_id = episode_session_id.split("&")[0].split("?")[0]
     play_url = f"https://animepahe.pw/play/{anime_session_id}/{clean_episode_id}"
     streams = []

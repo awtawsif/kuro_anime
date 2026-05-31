@@ -4,7 +4,8 @@ import sys
 import click
 from rich.table import Table
 
-from kuro.cli import cli, console, err_console
+from kuro.cli import cli
+from kuro.console import console, err_console
 from kuro._helpers import _assign_code
 from kuro.api import fetch_anime_search_results
 

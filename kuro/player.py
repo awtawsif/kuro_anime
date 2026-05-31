@@ -3,13 +3,17 @@ import subprocess
 import sys
 
 
+from kuro.exceptions import PlayerNotFoundError
+
+
 def play(url: str):
     mpv = shutil.which("mpv")
     if not mpv:
-        print("mpv not found. Install it:", file=sys.stderr)
-        print("  apt:  sudo apt install mpv", file=sys.stderr)
-        print("  brew: brew install mpv", file=sys.stderr)
-        print("  choco: choco install mpv", file=sys.stderr)
-        sys.exit(1)
+        raise PlayerNotFoundError(
+            "mpv not found. Install it:\n"
+            "  apt:  sudo apt install mpv\n"
+            "  brew: brew install mpv\n"
+            "  choco: choco install mpv"
+        )
 
     subprocess.run([mpv, f"--referrer=https://kwik.cx/", url])

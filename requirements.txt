@@ -4,3 +4,5 @@ requests>=2.32
 beautifulsoup4>=4.13
 lxml>=6.0
 curl_cffi>=0.15.0
+yt-dlp>=2024.0
+pycryptodomex>=3.20

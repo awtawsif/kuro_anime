@@ -5,8 +5,10 @@ import click
 from rich.panel import Panel
 from rich.table import Table
 
-from kuro.cli import cli, console, err_console
+from kuro.cli import cli
+from kuro.console import console, err_console
 from kuro._helpers import _resolve_anime
+from kuro.exceptions import KuroError
 from kuro import state
 from kuro.api import fetch_anime_details
 
@@ -15,7 +17,11 @@ from kuro.api import fetch_anime_details
 @click.argument("anime")
 def detail(anime):
     ctx = click.get_current_context()
-    session_id, title = _resolve_anime(anime)
+    try:
+        session_id, title = _resolve_anime(anime)
+    except KuroError as e:
+        err_console.print(f"[red]{e}[/]")
+        sys.exit(1)
     details, error = fetch_anime_details(session_id)
 
     if ctx.parent.obj.get("json"):
