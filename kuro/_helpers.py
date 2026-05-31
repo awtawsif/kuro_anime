@@ -250,11 +250,9 @@ def _pick_quality(items: list[dict]) -> dict:
     return items[int(choice) - 1]
 
 
-def _resolve_and_play(anime: str, episode_id: str | None, do_play: bool):
+def _resolve_and_play(anime: str, raw_episode: str | None, do_play: bool):
     session_id, _ = _resolve_anime(anime)
-
-    if not episode_id:
-        episode_id = _pick_episode(session_id)
+    episode_id = _resolve_episode_number(session_id, int(raw_episode)) if raw_episode else _pick_episode(session_id)
 
     with console.status("Fetching streams..."):
         streams, error = fetch_episode_streams(session_id, episode_id)
@@ -299,6 +297,14 @@ def _parse_episode_range(range_str: str) -> list[int]:
         else:
             nums.append(int(part))
     return sorted(set(nums))
+
+
+def _resolve_episode_number(session_id: str, episode_num: int) -> str:
+    all_ep = _fetch_all_episodes(session_id)
+    for ep in all_ep:
+        if int(ep.get("episode", 0)) == episode_num:
+            return ep["session"]
+    raise KuroError(f"Episode {episode_num} not found.")
 
 
 def _format_size(bytes_: int) -> str:
@@ -367,15 +373,14 @@ def _download_one(video_url: str, output_path: Path, label: str):
     console.print(f"[green]Downloaded:[/] {output_path.name} ({size})")
 
 
-def _download_single(anime: str, episode_id: str | None, output_dir: Path | None):
+def _download_single(anime: str, raw_episode: str | None, output_dir: Path | None):
     session_id, title = _resolve_anime(anime)
 
     if output_dir is None:
         output_dir = Path.home() / "Videos" / _sanitize_filename(title)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    if not episode_id:
-        episode_id = _pick_episode(session_id)
+    episode_id = _resolve_episode_number(session_id, int(raw_episode)) if raw_episode else _pick_episode(session_id)
 
     with console.status("Fetching episode info..."):
         all_ep = _fetch_all_episodes(session_id)

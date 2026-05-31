@@ -11,8 +11,8 @@ from kuro.exceptions import KuroError
 
 @cli.command()
 @click.argument("anime")
-@click.argument("episode_id", required=False)
-@click.option("--episode", "-e", "episode_opt", default=None, help="Episode session ID (alternative to positional arg)")
+@click.argument("episode_id", required=False, type=int)
+@click.option("--episode", "-e", "episode_opt", default=None, type=int, help="Episode number (alternative to positional arg)")
 def watch(anime, episode_id, episode_opt):
     ctx = click.get_current_context()
     try:
@@ -30,8 +30,8 @@ def watch(anime, episode_id, episode_opt):
 
 @cli.command()
 @click.argument("anime")
-@click.argument("episode_id", required=False)
-@click.option("--episode", "-e", "episode_opt", default=None, help="Episode session ID (alternative to positional arg)")
+@click.argument("episode_id", required=False, type=int)
+@click.option("--episode", "-e", "episode_opt", default=None, type=int, help="Episode number (alternative to positional arg)")
 @click.option("--output", "-o", default=None, help="Output directory (default: ~/Videos/{title}/)")
 @click.option("--batch", "-b", default=None, help="Download episode range (e.g. 1-10, 1,3,5)")
 def download(anime, episode_id, episode_opt, output, batch):
