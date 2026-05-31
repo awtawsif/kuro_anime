@@ -23,6 +23,8 @@ A terminal-based anime discovery and streaming tool. Search anime, browse curren
 git clone https://github.com/awtawsif/kuro_anime.git
 cd kuro_anime
 git checkout cli-version
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -e .
 ```
 
