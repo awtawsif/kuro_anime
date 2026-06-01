@@ -6,3 +6,4 @@ from .watch import watch, download
 from .doctor import doctor
 from .completion import completion
 from .history import history
+from .init import init

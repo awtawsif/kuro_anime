@@ -17,6 +17,7 @@
 - **Doctor** — `kuro doctor` checks all system dependencies with install instructions
 - **Shell Completion** — `kuro completion bash|zsh|fish` generates completion scripts
 - **History** — `kuro history` tracks recent searches, watches, and downloads
+- **Config Init** — `kuro init` generates a commented default configuration
 
 ## Installation
 
@@ -36,19 +37,20 @@ pip install .
 
 ## Configuration
 
-Create `~/.kuro_anime/config.toml` to customize defaults:
+A default config is auto-generated on first run. Edit `~/.kuro_anime/config.toml` to customize:
 
 ```toml
 [defaults]
 output_dir = "~/Videos"        # download destination
-quality = "best"               # or "1080", "720", etc.
-player = "mpv"                 # video player binary
+quality = "best"               # preferred resolution: "best", "1080", "720", etc.
+language = "jpn"               # preferred audio language: "jpn", "eng", etc.
+player = "mpv"                 # video player binary (mpv, vlc, iina, etc.)
 
 [download]
 filename_template = "{title} - EP{episode:02d}.mp4"
 ```
 
-CLI flags override config values when both are supplied.
+You can also run `kuro init --force` to regenerate the default config. CLI flags override config values when both are supplied.
 
 ## Quick Start
 
@@ -148,6 +150,15 @@ Show recent searches, watches, and downloads, or clear history.
 kuro history            # last 20 entries
 kuro history --limit 5  # last 5 entries
 kuro history --clear    # erase all history
+```
+
+### `kuro init [--force]`
+
+Generate a commented default configuration file at `~/.kuro_anime/config.toml`. Run with `--force` to overwrite an existing config.
+
+```sh
+kuro init         # create config if missing
+kuro init --force # overwrite existing config
 ```
 
 All commands accept `--json` for machine-readable JSON output.

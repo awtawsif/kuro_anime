@@ -247,18 +247,34 @@ def _pick_episode(session_id: str):
         err_console.print(f"[red]Episode {choice} not found.[/]")
 
 
-def _pick_quality(items: list[dict], preferred: str | None = None) -> dict:
+def _pick_best_by_resolution(
+    items: list[dict], preferred_language: str | None = None,
+) -> dict:
+    if preferred_language:
+        matching = [i for i in items if i.get("audio") == preferred_language]
+        if matching:
+            return max(matching, key=lambda i: int(i.get("resolution", 0) or 0))
+    return max(items, key=lambda i: int(i.get("resolution", 0) or 0))
+
+
+def _pick_quality(
+    items: list[dict], preferred: str | None = None,
+    preferred_language: str | None = None,
+) -> dict:
     if len(items) == 1:
         return items[0]
 
     if preferred and preferred != "best":
         for item in items:
             if str(item.get("resolution", "")) == preferred:
+                if not preferred_language or item.get("audio") == preferred_language:
+                    return item
+        for item in items:
+            if str(item.get("resolution", "")) == preferred:
                 return item
 
     if preferred == "best":
-        best = max(items, key=lambda i: int(i.get("resolution", 0) or 0))
-        return best
+        return _pick_best_by_resolution(items, preferred_language)
 
     from collections import OrderedDict
 
@@ -304,7 +320,7 @@ def _resolve_and_play(anime: str, raw_episode: str | None, do_play: bool):
         )
 
     cfg = get_config()
-    selected = _pick_quality(streams, cfg.quality)
+    selected = _pick_quality(streams, cfg.quality, cfg.language)
     kwik_url = selected["kwik_url"]
 
     with console.status("Extracting video URL..."):
@@ -473,7 +489,7 @@ def _download_single(anime: str, raw_episode: str | None, output_dir: Path | Non
             suggestion="This episode may not have been released yet.",
         )
 
-    selected = _pick_quality(streams, cfg.quality)
+    selected = _pick_quality(streams, cfg.quality, cfg.language)
 
     with console.status("Extracting video URL..."):
         try:
@@ -519,8 +535,12 @@ def _batch_download(anime: str, episodes: list[int], output_dir: Path | None):
         if pref and pref != "best":
             for item in items:
                 if str(item.get("resolution", "")) == pref:
+                    if not cfg.language or item.get("audio") == cfg.language:
+                        return item
+            for item in items:
+                if str(item.get("resolution", "")) == pref:
                     return item
-        return max(items, key=lambda i: int(i.get("resolution", 0) or 0))
+        return _pick_best_by_resolution(items, cfg.language)
 
     for ep_num in episodes:
         ep = ep_map.get(ep_num)
