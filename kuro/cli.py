@@ -1,5 +1,5 @@
 import logging
-import os
+import sys
 from importlib.metadata import version, PackageNotFoundError
 
 import click
@@ -23,7 +23,7 @@ except PackageNotFoundError:
 def cli(ctx, json_output):
     ctx.ensure_object(dict)["json"] = json_output
     ctx.ensure_object(dict)["config"] = get_config()
-    if "_KURO_COMPLETE" not in os.environ:
+    if sys.stdout.isatty():
         if "YUhBIBrskG3DbXfMe7ZH" in API_HEADERS.get("Cookie", ""):
             err_console.print(
                 "[yellow]Warning: Default cookies in use. They may expire.[/]"
