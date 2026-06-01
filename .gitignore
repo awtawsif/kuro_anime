@@ -4,4 +4,6 @@ __pycache__/
 node_modules
 .idx
 *.egg-info/
+dist/
+build/
 AGENTS.md

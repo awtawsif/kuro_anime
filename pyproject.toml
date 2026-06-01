@@ -4,9 +4,25 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "kuro_anime"
-version = "1.5.0"
+version = "1.5.1"
 description = "Terminal-based anime discovery and streaming tool"
+readme = "README.md"
+license = "GPL-3.0-only"
 requires-python = ">=3.10"
+authors = [
+    {name = "awtawsif", email = "tawsif7492@gmail.com"},
+]
+keywords = ["anime", "cli", "streaming", "terminal"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: End Users/Desktop",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
 dependencies = [
     "click>=8.0",
     "rich>=13.0",
@@ -20,6 +36,11 @@ dependencies = [
 
 [project.scripts]
 kuro = "kuro.cli:cli"
+
+[project.urls]
+Homepage = "https://github.com/awtawsif/kuro_anime"
+Repository = "https://github.com/awtawsif/kuro_anime"
+Issues = "https://github.com/awtawsif/kuro_anime/issues"
 
 [tool.setuptools.packages.find]
 include = ["kuro*"]
