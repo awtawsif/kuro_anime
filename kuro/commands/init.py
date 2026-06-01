@@ -8,7 +8,11 @@ from kuro.console import console, err_console
 @cli.command()
 @click.option("--force", is_flag=True, help="Overwrite existing config")
 def init(force):
-    """Generate a default configuration file."""
+    """Create a default config at ~/.kuro_anime/config.toml.
+
+    Writes a commented TOML file with all available options.
+    Use --force to overwrite an existing config.
+    """
     if CONFIG_FILE.exists() and not force:
         err_console.print(
             f"[yellow]Config already exists at {CONFIG_FILE}.[/]\n"

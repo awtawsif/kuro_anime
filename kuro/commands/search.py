@@ -14,6 +14,11 @@ from kuro.api import fetch_anime_search_results
 @cli.command()
 @click.argument("query")
 def search(query):
+    """Search anime by title.
+
+    Displays matching results with short codes, type, episode count,
+    score, and status. Short codes are saved for instant lookups later.
+    """
     ctx = click.get_current_context()
     results, error = fetch_anime_search_results(query)
 

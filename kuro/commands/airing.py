@@ -11,8 +11,9 @@ from kuro.api import fetch_airing_anime
 
 
 @cli.command()
-@click.option("--page", default=1, type=int, help="Page number")
+@click.option("--page", default=1, type=int, help="Page number of currently airing list")
 def airing(page):
+    """Browse currently airing anime with pagination."""
     ctx = click.get_current_context()
     anime, pagination, error = fetch_airing_anime(page)
 

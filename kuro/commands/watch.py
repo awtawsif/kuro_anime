@@ -12,8 +12,14 @@ from kuro.exceptions import KuroError
 @cli.command()
 @click.argument("anime")
 @click.argument("episode_id", required=False, type=int)
-@click.option("--episode", "-e", "episode_opt", default=None, type=int, help="Episode number (alternative to positional arg)")
+@click.option("--episode", "-e", "episode_opt", default=None, type=int, help="Skip to specific episode number")
 def watch(anime, episode_id, episode_opt):
+    """Browse episodes and stream via your configured player.
+
+    Launches an interactive episode and quality picker, then streams
+    the selected video URL through the player set in config (default: mpv).
+    Use --episode to skip directly to a specific episode number.
+    """
     ctx = click.get_current_context()
     try:
         if ctx.parent.obj.get("json"):
@@ -33,10 +39,16 @@ def watch(anime, episode_id, episode_opt):
 @cli.command()
 @click.argument("anime")
 @click.argument("episode_id", required=False, type=int)
-@click.option("--episode", "-e", "episode_opt", default=None, type=int, help="Episode number (alternative to positional arg)")
-@click.option("--output", "-o", default=None, help="Output directory (default: ~/Videos/{title}/)")
+@click.option("--episode", "-e", "episode_opt", default=None, type=int, help="Skip to specific episode number")
+@click.option("--output", "-o", default=None, help="Output directory (default: config output_dir / title)")
 @click.option("--batch", "-b", default=None, help="Download episode range (e.g. 1-10, 1,3,5)")
 def download(anime, episode_id, episode_opt, output, batch):
+    """Download video files to disk.
+
+    Launches an interactive episode and quality picker by default.
+    Use --batch to download a range of episodes non-interactively,
+    or pass an episode number directly to skip the picker.
+    """
     ctx = click.get_current_context()
     try:
         if ctx.parent.obj.get("json"):

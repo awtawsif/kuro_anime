@@ -1,7 +1,8 @@
+import json
 import sys
+from dataclasses import asdict
 
-from rich.table import Table
-from rich.text import Text
+import click
 
 from kuro.cli import cli
 from kuro.console import console, err_console
@@ -10,8 +11,18 @@ from kuro.doctor import check_all
 
 @cli.command()
 def doctor():
-    """Check system dependencies and configuration."""
+    """Check system dependencies and configuration.
+
+    Runs all dependency checks (mpv, ffmpeg, Python packages, config file)
+    and displays a pass/fail table. Exits with code 1 if any check fails.
+    """
+    ctx = click.get_current_context()
     results = check_all()
+
+    if ctx.parent.obj.get("json"):
+        sys.stdout.write(json.dumps([asdict(r) for r in results]) + "\n")
+        return
+
     passed = 0
     failed = 0
 

@@ -13,13 +13,19 @@ from kuro.api import fetch_episode_list
 
 @cli.command()
 @click.argument("anime")
-@click.option("--page", default=1, type=int)
+@click.option("--page", default=1, type=int, help="Page number of episode list")
 @click.option(
     "--sort",
     default="episode_asc",
     type=click.Choice(["episode_asc", "episode_desc"]),
+    help="Sort episodes by episode number",
 )
 def episodes(anime, page, sort):
+    """List episodes with pagination and sort order.
+
+    Shows episode numbers, duration, and filler flags for the selected
+    anime. Results are paginated; use --page and --sort to navigate.
+    """
     ctx = click.get_current_context()
     try:
         session_id, title = _resolve_anime(anime)

@@ -16,6 +16,11 @@ from kuro.api import fetch_anime_details
 @cli.command()
 @click.argument("anime")
 def detail(anime):
+    """Show detailed anime info with synopsis and metadata.
+
+    Displays full details: synopsis, metadata panel, relations table,
+    and recommendations. Accepts a short code, UUID, or kebab-case slug.
+    """
     ctx = click.get_current_context()
     try:
         session_id, title = _resolve_anime(anime)

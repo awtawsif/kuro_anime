@@ -13,8 +13,7 @@ from kuro.console import console
 @cli.command()
 @click.option("--limit", default=20, type=int, help="Number of entries to show")
 @click.option("--clear", is_flag=True, help="Clear all history")
-@click.option("--json", "json_output", is_flag=True, help="Output as JSON")
-def history(limit, clear, json_output):
+def history(limit, clear):
     """Show recent activity or clear history."""
     ctx = click.get_current_context()
 
@@ -23,7 +22,7 @@ def history(limit, clear, json_output):
         console.print("[green]History cleared.[/]")
         return
 
-    if ctx.parent.obj.get("json") or json_output:
+    if ctx.parent.obj.get("json"):
         entries = state.get_history(limit)
         sys.stdout.write(json.dumps(entries) + "\n")
         return

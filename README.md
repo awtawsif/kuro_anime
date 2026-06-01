@@ -70,98 +70,22 @@ kuro airing --page 1
 
 ## Commands
 
-### `kuro search <query>`
+Run `kuro <command> --help` for full usage. All commands accept `--json` for machine-readable output.
 
-Search anime by title. Displays results with short codes and saves them to state.
+| Command | Description |
+|---------|-------------|
+| `search <query>` | Search anime by title (generates short codes) |
+| `airing` | Browse currently airing anime |
+| `detail <anime>` | Show synopsis, metadata, relations, recommendations |
+| `episodes <anime>` | List episodes with pagination and sort |
+| `watch <anime>` | Interactive episode/quality picker → mpv |
+| `download <anime>` | Download episodes (single or batch) |
+| `doctor` | Check system dependencies |
+| `completion <shell>` | Generate shell completion (bash/zsh/fish) |
+| `history` | Show recent searches, watches, downloads |
+| `init` | Generate commented default config |
 
-```sh
-kuro search "Frieren"
-```
-
-### `kuro airing [--page N]`
-
-Browse currently airing anime with pagination. Assigns short codes for each entry.
-
-```sh
-kuro airing --page 1
-```
-
-### `kuro detail <anime-id>`
-
-Show full anime info: synopsis, metadata, relations, and recommendations.
-
-Anime IDs can be a **short code** (`onpi`), a **UUID** (`37aeb550-...`), or a **kebab-case slug** (`one-piece`). Short codes persist across sessions and never require re-searching.
-
-```sh
-kuro detail onpi       # short code
-kuro detail one-piece  # slug
-```
-
-### `kuro episodes <anime-id> [--page N] [--sort episode_asc|episode_desc]`
-
-List episodes with pagination.
-
-```sh
-kuro episodes onpi --page 1 --sort episode_desc
-```
-
-### `kuro watch <anime-id> [episode_id] [--episode / -e]`
-
-Interactive episode and quality picker. Extracts the video URL and streams it via mpv.
-
-```sh
-kuro watch onpi
-kuro watch onpi --episode 5  # skip to episode 5
-```
-
-### `kuro download <anime-id> [episode_id] [--episode / -e] [--output / -o] [--batch / -b]`
-
-Download video files. Auto-named `{Title} - EP{num:02d}.mp4`.
-
-```sh
-kuro download onpi                           # interactive picker
-kuro download onpi -b 1-10                   # batch episodes 1-10
-kuro download onpi -b 1-5,8,10-12 -o ./eps/  # batch with custom dir
-```
-
-### `kuro doctor`
-
-Check all system dependencies and configuration. Prints a summary table with pass/fail per check.
-
-```sh
-kuro doctor
-```
-
-### `kuro completion bash|zsh|fish`
-
-Print a shell completion script. Source it in your shell config:
-
-```sh
-eval "$(kuro completion bash)"   # bash
-eval "$(kuro completion zsh)"    # zsh
-kuro completion fish | source    # fish
-```
-
-### `kuro history [--limit N] [--clear]`
-
-Show recent searches, watches, and downloads, or clear history.
-
-```sh
-kuro history            # last 20 entries
-kuro history --limit 5  # last 5 entries
-kuro history --clear    # erase all history
-```
-
-### `kuro init [--force]`
-
-Generate a commented default configuration file at `~/.kuro_anime/config.toml`. Run with `--force` to overwrite an existing config.
-
-```sh
-kuro init         # create config if missing
-kuro init --force # overwrite existing config
-```
-
-All commands accept `--json` for machine-readable JSON output.
+Identifiers can be a **short code** (`onpi`), a **UUID**, or a **kebab-case slug** (`one-piece`). Short codes persist across sessions.
 
 ## State
 
