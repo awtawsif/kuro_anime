@@ -302,7 +302,7 @@ def _pick_quality(
 
 
 def _resolve_and_play(anime: str, raw_episode: str | None, do_play: bool):
-    session_id, _ = _resolve_anime(anime)
+    session_id, title = _resolve_anime(anime)
     episode_id = _resolve_episode_number(session_id, int(raw_episode)) if raw_episode else _pick_episode(session_id)
 
     with console.status("Fetching streams..."):
