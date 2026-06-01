@@ -1,4 +1,5 @@
 import re
+import shutil
 import subprocess
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
@@ -9,6 +10,7 @@ from rich.markup import escape
 from rich.progress import Progress, BarColumn, TextColumn, TimeRemainingColumn
 
 from kuro import state
+from kuro.config_manager import get_config
 from kuro.console import console, err_console
 from kuro.exceptions import KuroError, ResolutionError, StreamError, DownloadError
 from kuro.api import (
@@ -221,9 +223,18 @@ def _pick_episode(session_id: str):
         err_console.print(f"[red]Episode {choice} not found.[/]")
 
 
-def _pick_quality(items: list[dict]) -> dict:
+def _pick_quality(items: list[dict], preferred: str | None = None) -> dict:
     if len(items) == 1:
         return items[0]
+
+    if preferred and preferred != "best":
+        for item in items:
+            if str(item.get("resolution", "")) == preferred:
+                return item
+
+    if preferred == "best":
+        best = max(items, key=lambda i: int(i.get("resolution", 0) or 0))
+        return best
 
     from collections import OrderedDict
 
@@ -262,7 +273,8 @@ def _resolve_and_play(anime: str, raw_episode: str | None, do_play: bool):
     if not streams:
         raise StreamError("No streams found.")
 
-    selected = _pick_quality(streams)
+    cfg = get_config()
+    selected = _pick_quality(streams, cfg.quality)
     kwik_url = selected["kwik_url"]
 
     with console.status("Extracting video URL..."):
@@ -274,7 +286,7 @@ def _resolve_and_play(anime: str, raw_episode: str | None, do_play: bool):
     if do_play:
         label = f"{selected.get('resolution', '?')}p"
         console.print(f"[green]Streaming {label}...[/]")
-        play(video_url)
+        play(video_url, cfg.player)
     else:
         console.print(f"\n[bold green]Video URL:[/] {video_url}")
 
@@ -335,7 +347,18 @@ YTDLP_PROGRESS_RE = re.compile(
 def _download_one(video_url: str, output_path: Path, label: str):
     if not _ytdlp_available():
         raise DownloadError(
-            "yt-dlp is required for downloads. Install: pip install yt-dlp pycryptodomex"
+            "yt-dlp is required for downloads.\n"
+            "  Install: pip install yt-dlp pycryptodomex"
+        )
+
+    if not shutil.which("ffmpeg"):
+        raise DownloadError(
+            "ffmpeg not found (required by yt-dlp for merging).\n"
+            "  apt:  sudo apt install ffmpeg\n"
+            "  brew: brew install ffmpeg\n"
+            "  dnf:  sudo dnf install ffmpeg\n"
+            "  pacman: sudo pacman -S ffmpeg\n"
+            "  choco: choco install ffmpeg"
         )
 
     proc = subprocess.Popen(
@@ -374,10 +397,11 @@ def _download_one(video_url: str, output_path: Path, label: str):
 
 
 def _download_single(anime: str, raw_episode: str | None, output_dir: Path | None):
+    cfg = get_config()
     session_id, title = _resolve_anime(anime)
 
     if output_dir is None:
-        output_dir = Path.home() / "Videos" / _sanitize_filename(title)
+        output_dir = cfg.output_dir / _sanitize_filename(title)
     output_dir.mkdir(parents=True, exist_ok=True)
 
     episode_id = _resolve_episode_number(session_id, int(raw_episode)) if raw_episode else _pick_episode(session_id)
@@ -402,7 +426,7 @@ def _download_single(anime: str, raw_episode: str | None, output_dir: Path | Non
     if not streams:
         raise DownloadError("No streams found.")
 
-    selected = _pick_quality(streams)
+    selected = _pick_quality(streams, cfg.quality)
 
     with console.status("Extracting video URL..."):
         try:
@@ -412,15 +436,19 @@ def _download_single(anime: str, raw_episode: str | None, output_dir: Path | Non
 
     console.print(f"[dim]URL: {video_url}[/]")
 
-    output_path = output_dir / f"{safe_title} - {label}.mp4"
+    output_path = output_dir / cfg.filename_template.format(
+        title=safe_title, episode=ep_num or 0, label=label,
+        quality=f"{selected.get('resolution', '?')}p",
+    )
     _download_one(video_url, output_path, label)
 
 
 def _batch_download(anime: str, episodes: list[int], output_dir: Path | None):
+    cfg = get_config()
     session_id, title = _resolve_anime(anime)
 
     if output_dir is None:
-        output_dir = Path.home() / "Videos" / _sanitize_filename(title)
+        output_dir = cfg.output_dir / _sanitize_filename(title)
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -432,6 +460,14 @@ def _batch_download(anime: str, episodes: list[int], output_dir: Path | None):
 
     ep_map = {int(e.get("episode", 0)): e for e in all_ep}
     safe_title = _sanitize_filename(title)
+
+    def _pick_best(items: list[dict]) -> dict:
+        pref = cfg.quality
+        if pref and pref != "best":
+            for item in items:
+                if str(item.get("resolution", "")) == pref:
+                    return item
+        return max(items, key=lambda i: int(i.get("resolution", 0) or 0))
 
     for ep_num in episodes:
         ep = ep_map.get(ep_num)
@@ -452,12 +488,7 @@ def _batch_download(anime: str, episodes: list[int], output_dir: Path | None):
             err_console.print(f"[red]{label}: No streams found.[/]")
             continue
 
-        sorted_streams = sorted(
-            streams,
-            key=lambda s: int(s.get("resolution", 0) or 0),
-            reverse=True,
-        )
-        selected = sorted_streams[0]
+        selected = _pick_best(streams)
 
         with console.status(f"Extracting video URL for {label}..."):
             try:
@@ -468,7 +499,10 @@ def _batch_download(anime: str, episodes: list[int], output_dir: Path | None):
 
         console.print(f"[dim]{label} URL: {video_url}[/]")
 
-        output_path = output_dir / f"{safe_title} - {label}.mp4"
+        output_path = output_dir / cfg.filename_template.format(
+            title=safe_title, episode=ep_num, label=label,
+            quality=f"{selected.get('resolution', '?')}p",
+        )
         _download_one(video_url, output_path, label)
 
     console.print(f"\n[green]Batch download complete. Files saved to: {output_dir}[/]")

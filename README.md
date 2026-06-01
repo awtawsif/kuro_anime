@@ -14,6 +14,8 @@
 - **Episode Listings** — Browse episodes with pagination and sort order
 - **Streaming** — Interactive episode/quality picker → mpv
 - **Download** — Extract video URLs or batch-download episodes
+- **Doctor** — `kuro doctor` checks all system dependencies with install instructions
+- **Shell Completion** — `kuro completion bash|zsh|fish` generates completion scripts
 
 ## Installation
 
@@ -30,6 +32,22 @@ git clone https://github.com/awtawsif/kuro_anime.git
 cd kuro_anime
 pip install .
 ```
+
+## Configuration
+
+Create `~/.kuro_anime/config.toml` to customize defaults:
+
+```toml
+[defaults]
+output_dir = "~/Videos"        # download destination
+quality = "best"               # or "1080", "720", etc.
+player = "mpv"                 # video player binary
+
+[download]
+filename_template = "{title} - EP{episode:02d}.mp4"
+```
+
+CLI flags override config values when both are supplied.
 
 ## Quick Start
 
@@ -103,17 +121,35 @@ kuro download onpi -b 1-10                   # batch episodes 1-10
 kuro download onpi -b 1-5,8,10-12 -o ./eps/  # batch with custom dir
 ```
 
+### `kuro doctor`
+
+Check all system dependencies and configuration. Prints a summary table with pass/fail per check.
+
+```sh
+kuro doctor
+```
+
+### `kuro completion bash|zsh|fish`
+
+Print a shell completion script. Source it in your shell config:
+
+```sh
+eval "$(kuro completion bash)"   # bash
+eval "$(kuro completion zsh)"    # zsh
+kuro completion fish | source    # fish
+```
+
 All commands accept `--json` for machine-readable JSON output.
 
-## Configuration
+## State
 
-State is persisted to `~/.kuro_anime/state.json`. Short codes, session mappings, and a kwik-cache live there. Delete the file to reset all state.
+Persisted to `~/.kuro_anime/state.json`. Short codes, session mappings, and a kwik-cache live there. Delete the file to reset all state.
 
 ## FAQ
 
-**"mpv not found"**: Install mpv — `sudo apt install mpv` (Debian/Ubuntu), `brew install mpv` (macOS).
+**"mpv not found"**: Install mpv — `sudo apt install mpv` (Debian/Ubuntu), `brew install mpv` (macOS), `sudo dnf install mpv` (Fedora).
 
-**"ffmpeg not found"**: Install ffmpeg — `sudo apt install ffmpeg` (Debian/Ubuntu), `brew install ffmpeg` (macOS).
+**"ffmpeg not found"**: Install ffmpeg — `sudo apt install ffmpeg` (Debian/Ubuntu), `brew install ffmpeg` (macOS), `sudo dnf install ffmpeg` (Fedora).
 
 **"Could not resolve"**: The identifier wasn't a short code, UUID, or matching slug. Run `kuro search <query>` first.
 
