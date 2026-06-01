@@ -1,11 +1,12 @@
 import logging
+import os
 from importlib.metadata import version, PackageNotFoundError
 
 import click
 
 from kuro.config import API_HEADERS
 from kuro.config_manager import get_config
-from kuro.console import console, err_console
+from kuro.console import err_console
 
 logging.basicConfig(level=logging.WARNING, format="%(levelname)s: %(message)s")
 
@@ -22,10 +23,11 @@ except PackageNotFoundError:
 def cli(ctx, json_output):
     ctx.ensure_object(dict)["json"] = json_output
     ctx.ensure_object(dict)["config"] = get_config()
-    if "YUhBIBrskG3DbXfMe7ZH" in API_HEADERS.get("Cookie", ""):
-        err_console.print(
-            "[yellow]Warning: Default cookies in use. They may expire.[/]"
-        )
+    if "_KURO_COMPLETE" not in os.environ:
+        if "YUhBIBrskG3DbXfMe7ZH" in API_HEADERS.get("Cookie", ""):
+            err_console.print(
+                "[yellow]Warning: Default cookies in use. They may expire.[/]"
+            )
 
 
 import kuro.commands  # noqa: E402 — register commands via side-effect
