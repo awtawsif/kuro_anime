@@ -335,7 +335,7 @@ def _resolve_and_play(anime: str, raw_episode: str | None, do_play: bool):
     if do_play:
         label = f"{selected.get('resolution', '?')}p"
         console.print(f"[green]Streaming {label}...[/]")
-        state.add_history_entry("watch", anime, _, session_id)
+        state.add_history_entry("watch", anime, title, session_id)
         play(video_url, cfg.player)
     else:
         console.print(f"\n[bold green]Video URL:[/] {video_url}")
@@ -397,7 +397,12 @@ YTDLP_PROGRESS_RE = re.compile(
 )
 
 
-def _download_one(video_url: str, output_path: Path, label: str):
+def _notify(title: str, message: str):
+    if shutil.which("notify-send"):
+        subprocess.run(["notify-send", title, message], capture_output=True)
+
+
+def _download_one(video_url: str, output_path: Path, label: str, resume: bool = False):
     if not _ytdlp_available():
         raise DownloadError(
             "yt-dlp is required for downloads.\n"
@@ -414,13 +419,14 @@ def _download_one(video_url: str, output_path: Path, label: str):
             "  choco: choco install ffmpeg"
         )
 
-    proc = subprocess.Popen(
-        ["yt-dlp",
-         "--referer", "https://kwik.cx/",
-         "--newline",
-         "--no-mtime",
-         "-o", str(output_path),
-         video_url],
+    argv = ["yt-dlp",
+            "--referer", "https://kwik.cx/",
+            "--newline",
+            "--no-mtime"]
+    if resume:
+        argv += ["--continue", "-c"]
+    argv += ["-o", str(output_path), video_url]
+    proc = subprocess.Popen(argv,
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
         universal_newlines=True,
     )
@@ -451,10 +457,12 @@ def _download_one(video_url: str, output_path: Path, label: str):
     size = _format_size(output_path.stat().st_size)
     console.print(f"[green]Downloaded:[/] {output_path.name} ({size})")
     state.add_history_entry("download", label, output_path.name, "")
+    _notify("Download Complete", f"{output_path.name} ({size})")
 
 
-def _download_single(anime: str, raw_episode: str | None, output_dir: Path | None):
+def _download_single(anime: str, raw_episode: str | None, output_dir: Path | None, resume: bool = False):
     cfg = get_config()
+    resume = resume or cfg.resume
     session_id, title = _resolve_anime(anime)
 
     if output_dir is None:
@@ -506,11 +514,12 @@ def _download_single(anime: str, raw_episode: str | None, output_dir: Path | Non
         title=safe_title, episode=ep_num or 0, label=label,
         quality=f"{selected.get('resolution', '?')}p",
     )
-    _download_one(video_url, output_path, label)
+    _download_one(video_url, output_path, label, resume)
 
 
-def _batch_download(anime: str, episodes: list[int], output_dir: Path | None):
+def _batch_download(anime: str, episodes: list[int], output_dir: Path | None, resume: bool = False):
     cfg = get_config()
+    resume = resume or cfg.resume
     session_id, title = _resolve_anime(anime)
 
     if output_dir is None:
@@ -576,8 +585,7 @@ def _batch_download(anime: str, episodes: list[int], output_dir: Path | None):
             title=safe_title, episode=ep_num, label=label,
             quality=f"{selected.get('resolution', '?')}p",
         )
-        _download_one(video_url, output_path, label)
+        _download_one(video_url, output_path, label, resume)
 
     console.print(f"\n[green]Batch download complete. Files saved to: {output_dir}[/]")
-
-
+    _notify("Batch Download Complete", f"{title}: {len(episodes)} episode(s) saved to {output_dir}")

@@ -42,7 +42,8 @@ def watch(anime, episode_id, episode_opt):
 @click.option("--episode", "-e", "episode_opt", default=None, type=int, help="Skip to specific episode number")
 @click.option("--output", "-o", default=None, help="Output directory (default: config output_dir / title)")
 @click.option("--batch", "-b", default=None, help="Download episode range (e.g. 1-10, 1,3,5)")
-def download(anime, episode_id, episode_opt, output, batch):
+@click.option("--continue", "-c", "resume", is_flag=True, default=False, help="Resume partial download")
+def download(anime, episode_id, episode_opt, output, batch, resume):
     """Download video files to disk.
 
     Launches an interactive episode and quality picker by default.
@@ -61,10 +62,10 @@ def download(anime, episode_id, episode_opt, output, batch):
 
         if batch:
             from kuro._helpers import _parse_episode_range, _batch_download
-            _batch_download(anime, _parse_episode_range(batch), out_dir)
+            _batch_download(anime, _parse_episode_range(batch), out_dir, resume)
         else:
             from kuro._helpers import _download_single
-            _download_single(anime, episode_id or episode_opt, out_dir)
+            _download_single(anime, episode_id or episode_opt, out_dir, resume)
     except KuroError as e:
         err_console.print(f"[red]{e}[/]")
         if e.suggestion:

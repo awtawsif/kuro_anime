@@ -33,6 +33,9 @@ player = "mpv"
 [download]
 # Filename template. Available variables: {title}, {episode}, {label}, {quality}
 filename_template = "{title} - EP{episode:02d}.mp4"
+
+# Resume partial downloads (default: false)
+resume = false
 """
 
 
@@ -43,6 +46,7 @@ class KuroConfig:
     language: str = "jpn"
     player: str = "mpv"
     filename_template: str = "{title} - EP{episode:02d}.mp4"
+    resume: bool = False
 
 
 def _defaults() -> KuroConfig:
@@ -90,6 +94,8 @@ def get_config() -> KuroConfig:
     download = raw.get("download", {})
     if "filename_template" in download:
         cfg.filename_template = download["filename_template"]
+    if "resume" in download:
+        cfg.resume = download["resume"]
 
     _cache = cfg
     return cfg
