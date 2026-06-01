@@ -25,6 +25,8 @@ def watch(anime, episode_id, episode_opt):
         _resolve_and_play(anime, episode_id or episode_opt, do_play=True)
     except KuroError as e:
         err_console.print(f"[red]{e}[/]")
+        if e.suggestion:
+            err_console.print(f"[yellow]Tip: {e.suggestion}[/]")
         sys.exit(1)
 
 
@@ -53,4 +55,6 @@ def download(anime, episode_id, episode_opt, output, batch):
             _download_single(anime, episode_id or episode_opt, out_dir)
     except KuroError as e:
         err_console.print(f"[red]{e}[/]")
+        if e.suggestion:
+            err_console.print(f"[yellow]Tip: {e.suggestion}[/]")
         sys.exit(1)

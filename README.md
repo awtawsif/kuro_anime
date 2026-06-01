@@ -16,6 +16,7 @@
 - **Download** — Extract video URLs or batch-download episodes
 - **Doctor** — `kuro doctor` checks all system dependencies with install instructions
 - **Shell Completion** — `kuro completion bash|zsh|fish` generates completion scripts
+- **History** — `kuro history` tracks recent searches, watches, and downloads
 
 ## Installation
 
@@ -139,11 +140,21 @@ eval "$(kuro completion zsh)"    # zsh
 kuro completion fish | source    # fish
 ```
 
+### `kuro history [--limit N] [--clear]`
+
+Show recent searches, watches, and downloads, or clear history.
+
+```sh
+kuro history            # last 20 entries
+kuro history --limit 5  # last 5 entries
+kuro history --clear    # erase all history
+```
+
 All commands accept `--json` for machine-readable JSON output.
 
 ## State
 
-Persisted to `~/.kuro_anime/state.json`. Short codes, session mappings, and a kwik-cache live there. Delete the file to reset all state.
+Persisted to `~/.kuro_anime/state.json`. Short codes, session mappings, a kwik-cache, and activity history live there. Delete the file to reset all state.
 
 ## FAQ
 

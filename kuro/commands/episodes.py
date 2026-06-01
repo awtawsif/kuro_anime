@@ -25,6 +25,8 @@ def episodes(anime, page, sort):
         session_id, title = _resolve_anime(anime)
     except KuroError as e:
         err_console.print(f"[red]{e}[/]")
+        if e.suggestion:
+            err_console.print(f"[yellow]Tip: {e.suggestion}[/]")
         sys.exit(1)
 
     batch, pagination, error = fetch_episode_list(session_id, page, sort)

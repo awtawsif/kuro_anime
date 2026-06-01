@@ -21,6 +21,8 @@ def detail(anime):
         session_id, title = _resolve_anime(anime)
     except KuroError as e:
         err_console.print(f"[red]{e}[/]")
+        if e.suggestion:
+            err_console.print(f"[yellow]Tip: {e.suggestion}[/]")
         sys.exit(1)
     details, error = fetch_anime_details(session_id)
 

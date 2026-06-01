@@ -69,3 +69,30 @@ def set_kwik_cache_entry(kwik_url: str, hls_url: str):
     _write(data)
 
 
+HISTORY_MAX = 100
+
+
+def add_history_entry(entry_type: str, query: str, title: str, session_id: str):
+    data = _read()
+    data.setdefault("history", [])
+    data["history"].append({
+        "timestamp": time.time(),
+        "type": entry_type,
+        "query": query,
+        "title": title,
+        "session_id": session_id,
+    })
+    data["history"] = data["history"][-HISTORY_MAX:]
+    _write(data)
+
+
+def get_history(limit: int = 20) -> list[dict]:
+    return _read().get("history", [])[-limit:][::-1]
+
+
+def clear_history():
+    data = _read()
+    data["history"] = []
+    _write(data)
+
+

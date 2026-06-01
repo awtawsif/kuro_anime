@@ -4,6 +4,7 @@ import sys
 import click
 from rich.table import Table
 
+from kuro import state
 from kuro.cli import cli
 from kuro.console import console, err_console
 from kuro._helpers import _assign_code
@@ -27,6 +28,8 @@ def search(query):
     if not results:
         console.print("[yellow]No results found.[/]")
         sys.exit(1)
+
+    state.add_history_entry("search", query, query, "")
 
     table = Table(title=f"Search results for '{query}'")
     table.add_column("Code", style="cyan", width=6)

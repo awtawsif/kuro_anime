@@ -82,15 +82,22 @@ def _resolve_anime(identifier: str):
         if not error:
             title = details.get("title", identifier)
             return identifier, title
-        raise ResolutionError(f"Error resolving UUID: {error}")
+        raise ResolutionError(
+            f"Error resolving UUID: {error}",
+            suggestion="Verify the UUID is correct and try again.",
+        )
 
     results, error = fetch_anime_search_results(identifier)
     if error:
-        raise ResolutionError(f"Error: {error}")
+        raise ResolutionError(
+            f"Error: {error}",
+            suggestion="Check your internet connection and try again.",
+        )
 
     if not results:
         raise ResolutionError(
-            f"Could not resolve '{identifier}'. Try searching first."
+            f"Could not resolve '{identifier}'.",
+            suggestion=f"Try `kuro search {identifier}` first to find the correct ID.",
         )
 
     slug_map = {_slugify(r["title"]): r for r in results}
@@ -102,9 +109,23 @@ def _resolve_anime(identifier: str):
         r = results[0]
         return r["session"], r["title"]
 
-    console.print("[yellow]Multiple matches. Pick one:[/]")
+    table = Table(title="Multiple matches. Pick one:")
+    table.add_column("#", style="dim", width=3)
+    table.add_column("Title", style="white")
+    table.add_column("Type")
+    table.add_column("Episodes")
+    table.add_column("Score")
+    table.add_column("Status")
     for i, r in enumerate(results, 1):
-        console.print(f"  {i}. {r['title']} [dim]({r.get('year', '')})[/]")
+        table.add_row(
+            str(i),
+            r.get("title", "N/A"),
+            r.get("type", ""),
+            str(r.get("episodes", "")),
+            f'{r.get("score"):.2f}' if r.get("score") else "",
+            r.get("status", ""),
+        )
+    console.print(table)
     choice = Prompt.ask(
         "Select", choices=[str(i) for i in range(1, len(results) + 1)]
     )
@@ -156,7 +177,10 @@ def _pick_episode(session_id: str):
 
     batch, total_count = load(1)
     if not all_ep:
-        raise KuroError("No episodes found for this anime.")
+        raise KuroError(
+            "No episodes found for this anime.",
+            suggestion="The anime may not have been released yet.",
+        )
 
     while True:
         console.print(f"[dim]Episodes loaded: {len(ep_by_num)} / {total_count}  (page {page}/{total_pages})[/]")
@@ -269,9 +293,15 @@ def _resolve_and_play(anime: str, raw_episode: str | None, do_play: bool):
         streams, error = fetch_episode_streams(session_id, episode_id)
 
     if error:
-        raise StreamError(error)
+        raise StreamError(
+            error,
+            suggestion="Check your internet connection and try again.",
+        )
     if not streams:
-        raise StreamError("No streams found.")
+        raise StreamError(
+            "No streams found.",
+            suggestion="This episode may not have been released yet.",
+        )
 
     cfg = get_config()
     selected = _pick_quality(streams, cfg.quality)
@@ -281,11 +311,15 @@ def _resolve_and_play(anime: str, raw_episode: str | None, do_play: bool):
         try:
             video_url = extract_hls_url(kwik_url)
         except Exception as e:
-            raise StreamError(f"Failed to extract video URL: {e}")
+            raise StreamError(
+                f"Failed to extract video URL: {e}",
+                suggestion="Try updating yt-dlp: pip install -U yt-dlp",
+            )
 
     if do_play:
         label = f"{selected.get('resolution', '?')}p"
         console.print(f"[green]Streaming {label}...[/]")
+        state.add_history_entry("watch", anime, _, session_id)
         play(video_url, cfg.player)
     else:
         console.print(f"\n[bold green]Video URL:[/] {video_url}")
@@ -316,7 +350,10 @@ def _resolve_episode_number(session_id: str, episode_num: int) -> str:
     for ep in all_ep:
         if int(ep.get("episode", 0)) == episode_num:
             return ep["session"]
-    raise KuroError(f"Episode {episode_num} not found.")
+    raise KuroError(
+        f"Episode {episode_num} not found.",
+        suggestion="Use `kuro episodes <anime>` to list available episodes.",
+    )
 
 
 def _format_size(bytes_: int) -> str:
@@ -390,10 +427,14 @@ def _download_one(video_url: str, output_path: Path, label: str):
         proc.wait()
 
     if proc.returncode != 0:
-        raise DownloadError(f"Download failed (exit code {proc.returncode})")
+        raise DownloadError(
+            f"Download failed (exit code {proc.returncode})",
+            suggestion="Check your internet connection and available disk space.",
+        )
 
     size = _format_size(output_path.stat().st_size)
     console.print(f"[green]Downloaded:[/] {output_path.name} ({size})")
+    state.add_history_entry("download", label, output_path.name, "")
 
 
 def _download_single(anime: str, raw_episode: str | None, output_dir: Path | None):
@@ -422,9 +463,15 @@ def _download_single(anime: str, raw_episode: str | None, output_dir: Path | Non
         streams, error = fetch_episode_streams(session_id, episode_id)
 
     if error:
-        raise DownloadError(error)
+        raise DownloadError(
+            error,
+            suggestion="Check your internet connection and try again.",
+        )
     if not streams:
-        raise DownloadError("No streams found.")
+        raise DownloadError(
+            "No streams found.",
+            suggestion="This episode may not have been released yet.",
+        )
 
     selected = _pick_quality(streams, cfg.quality)
 
@@ -432,7 +479,10 @@ def _download_single(anime: str, raw_episode: str | None, output_dir: Path | Non
         try:
             video_url = extract_hls_url(selected["kwik_url"])
         except Exception as e:
-            raise DownloadError(f"Failed to extract video URL: {e}")
+            raise DownloadError(
+                f"Failed to extract video URL: {e}",
+                suggestion="Try updating yt-dlp: pip install -U yt-dlp",
+            )
 
     console.print(f"[dim]URL: {video_url}[/]")
 
@@ -456,7 +506,10 @@ def _batch_download(anime: str, episodes: list[int], output_dir: Path | None):
         all_ep = _fetch_all_episodes(session_id)
 
     if not all_ep:
-        raise DownloadError("No episodes found.")
+        raise DownloadError(
+            "No episodes found.",
+            suggestion="The anime may not have been released yet.",
+        )
 
     ep_map = {int(e.get("episode", 0)): e for e in all_ep}
     safe_title = _sanitize_filename(title)
