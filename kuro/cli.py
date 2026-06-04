@@ -24,7 +24,7 @@ def cli(ctx, json_output):
     ctx.ensure_object(dict)["json"] = json_output
     ctx.ensure_object(dict)["config"] = get_config()
     if sys.stdout.isatty():
-        if "YUhBIBrskG3DbXfMe7ZH" in API_HEADERS.get("Cookie", ""):
+        if "Njc4M2E2ODI0Y2U5YmVh" in API_HEADERS.get("Cookie", ""):
             err_console.print(
                 "[yellow]Warning: Default cookies in use. They may expire.[/]"
             )
